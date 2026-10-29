@@ -1,0 +1,131 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && request.auth.token.email_verified == true
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.active == true;
+    }
+
+    function validNews() {
+      let data = request.resource.data;
+      return data.keys().hasAll(['title', 'content', 'published', 'publishedAt'])
+        && data.keys().hasOnly(['title', 'content', 'published', 'publishedAt', 'image', 'author'])
+        && data.title is string && data.title.size() > 0 && data.title.size() <= 160
+        && data.content is string && data.content.size() <= 20000
+        && data.published is bool
+        && data.publishedAt is string && data.publishedAt.size() <= 40
+        && (!data.keys().hasAny(['image']) || (data.image is string && data.image.size() <= 2000))
+        && (!data.keys().hasAny(['author']) || (data.author is string && data.author.size() <= 100));
+    }
+
+    function validGallery() {
+      let data = request.resource.data;
+      return data.keys().hasAll(['title', 'image', 'description', 'published'])
+        && data.keys().hasOnly(['title', 'image', 'description', 'published'])
+        && data.title is string && data.title.size() > 0 && data.title.size() <= 120
+        && data.image is string && data.image.size() > 0 && data.image.size() <= 2048
+        && data.image.matches('https://.*')
+        && data.description is string && data.description.size() <= 500
+        && data.published is bool;
+    }
+    function validShop(productId) {
+      let data = request.resource.data;
+      return data.keys().hasAll([
+          'id', 'category', 'name', 'description', 'priceRobux',
+          'gamePassUrl', 'available', 'sortOrder'
+        ])
+        && data.keys().hasOnly([
+          'id', 'category', 'name', 'description', 'priceRobux',
+          'image', 'perks', 'details', 'gamePassUrl', 'featured',
+          'available', 'sortOrder'
+        ])
+        && data.id is string && data.id == productId
+        && ['memberships', 'donations', 'advertisements'].hasAny([data.category])
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 120
+        && data.description is string && data.description.size() <= 2000
+        && data.priceRobux is number && data.priceRobux >= 0 && data.priceRobux <= 10000000
+        && data.gamePassUrl is string && data.gamePassUrl.size() <= 2048
+        && data.available is bool
+        && data.sortOrder is number && data.sortOrder >= 0
+        && (!data.keys().hasAny(['image']) || (data.image is string && data.image.size() <= 2048))
+        && (!data.keys().hasAny(['perks']) || (data.perks is list && data.perks.size() <= 30))
+        && (!data.keys().hasAny(['details']) || (data.details is string && data.details.size() <= 2000))
+        && (!data.keys().hasAny(['featured']) || data.featured is bool);
+    }
+    function validStaff() {
+      let data = request.resource.data;
+      return data.keys().hasAll(['name', 'role', 'published'])
+        && data.keys().hasOnly(['name', 'role', 'published', 'department', 'avatar'])
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 100
+        && data.role is string && data.role.size() > 0 && data.role.size() <= 100
+        && data.published is bool
+        && (!data.keys().hasAny(['department']) || (data.department is string && data.department.size() <= 100))
+        && (!data.keys().hasAny(['avatar']) || (data.avatar is string && data.avatar.size() <= 2000));
+    }
+
+    // Each signed-in user may check only their own approval document.
+    // No client may create, edit, delete, or enumerate administrator records.
+    // The project owner adds approved UID documents in Firebase Console.
+    match /admins/{uid} {
+      allow get: if signedIn() && request.auth.uid == uid;
+      allow list, create, update, delete: if false;
+    }
+
+    match /news/{documentId} {
+      allow read: if isAdmin() || resource.data.published == true;
+      allow create, update: if isAdmin() && validNews();
+      allow delete: if isAdmin();
+    }
+
+    match /staff/{documentId} {
+      allow read: if isAdmin() || resource.data.published == true;
+      allow create, update: if isAdmin() && validStaff();
+      allow delete: if isAdmin();
+    }
+
+    // The existing shop is public content. Only allowlisted administrators may change it.
+    match /shop/{productId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && validShop(productId);
+      allow delete: if isAdmin();
+    }
+
+    // A public Boolean marker distinguishes an intentionally empty managed catalog
+    // from the legacy source catalog used before its first explicit import.
+    match /shopConfig/{documentId} {
+      allow get: if documentId == 'catalog';
+      allow list: if false;
+      allow create, update: if documentId == 'catalog'
+        && isAdmin()
+        && request.resource.data.keys().hasOnly(['managed'])
+        && request.resource.data.managed == true;
+      allow delete: if false;
+    }
+    match /gallery/{documentId} {
+      allow read: if isAdmin() || resource.data.published == true;
+      allow create, update: if isAdmin() && validGallery();
+      allow delete: if isAdmin();
+    }
+    // Preserve the existing collections named in the prior project rules.
+    // The current public website does not edit these collections.
+    match /announcements/{documentId} {
+      allow read: if isAdmin() || resource.data.published == true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /staffRota/{documentId} {
+      allow read: if isAdmin() || resource.data.published == true;
+      allow create, update, delete: if isAdmin();
+    }
+    // No other client collection access is granted.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
