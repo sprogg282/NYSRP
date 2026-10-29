@@ -22,12 +22,6 @@ The supplied logo is `public/images/nysrp-logo.png`. Shared brand colors and res
 
 Accordion structure and currently general (not official NYSRP-verified) guidance live in `src/pages/PublicPages.tsx`, in the `rules` array and `RulesPage`. Replace the copy with approved community rules there. Rebuild/restart Vite after code edits.
 
-## Shop
-
-The Shop starts with the legacy `shopItems` catalog from `src/data/shop.ts`. In `/admin` you can explicitly import that catalog once, then add, edit, remove, filter, and reorder Firestore products. Its categories are New York Memberships, Donations, and Paid Advertisements. Each item supports name, description, Robux price, optional image, perks, ad details, Game Pass link, featured flag, availability, and persistent display order. See the management instructions below.
-
-Roblox Game Pass links open on Roblox. A valid link enables the button only when available is Boolean true. An unavailable product shows Coming Soon; an available product with a missing or invalid link remains marked available and clearly asks for the Game Pass link. Until a Firestore catalog is explicitly managed, the public shop uses the current source catalog; after import, Firestore is authoritative, including when the catalog is intentionally empty.
-
 ## External links and map
 
 Optional `.env.local` values (copied from `.env.example`) are public browser configuration:
@@ -41,16 +35,7 @@ The map page fetches `https://api.erlc.gg/maps`, parses the returned `{ "maps": 
 
 ## Verification boundaries
 
-TypeScript and production build checks are run after changes. News and staff records are stored in Cloud Firestore after Firebase is configured below. Roblox checkout occurs on Roblox; this site does not verify the payment. Admin persistence, report delivery, and live player/server data are not active until their server integrations are configured.
-# Managing the NYSRP Shop
-
-Use the existing `/admin` Shop section for normal product management. On first use, choose **Import current catalog** to copy the existing `src/data/shop.ts` entries exactly into Firestore; this import is explicit and does not run automatically. Then manage product fields, availability, and manual display order in the dashboard. You can also sort by name, price, or availability and filter categories without modifying saved product data. New or edited products are saved to Firestore and appear on the public `/shop` page. If the catalog is intentionally emptied, the Firestore managed marker keeps the public page empty instead of restoring the legacy list.
-
-
-## Roblox payment limits
-
-A purchase button opens a real configured Roblox Game Pass page in a new tab with safe external-link settings. A click is not proof of payment. This public site does not collect Roblox credentials, verify purchases, or automatically grant benefits. Automated verification/fulfilment would require a separate trusted server integration supported by Roblox, plus secure server-side credentials and a fulfillment process. No such backend is configured here.
-
+TypeScript and production build checks are run after changes. News and staff records are stored in Cloud Firestore after Firebase is configured below. Admin persistence, report delivery, and live player/server data are not active until their server integrations are configured.
 ## Firebase Admin, News, Staff, and Gallery
 
 The site uses Firebase Authentication and Cloud Firestore from the Firebase JavaScript SDK. /admin signs users in with email/password, requires a verified email and an active allowlist record at admins/<authUid>, then exposes News, Public Staff, and Gallery management. Public pages query only documents where published == true. The rules are in firestore.rules; they deny client access to all other collections and deny all client writes to admins.

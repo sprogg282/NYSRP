@@ -58,6 +58,30 @@ service cloud.firestore {
         && (!data.keys().hasAny(['details']) || (data.details is string && data.details.size() <= 2000))
         && (!data.keys().hasAny(['featured']) || data.featured is bool);
     }
+    function validPublicSupporter() {
+      let data = request.resource.data;
+      return data.keys().hasAll(['displayName', 'kind', 'verified', 'public', 'verifiedAt'])
+        && data.keys().hasOnly(['displayName', 'kind', 'verified', 'public', 'verifiedAt', 'robloxUsername', 'profileUrl', 'avatarUrl', 'amountRobux'])
+        && data.displayName is string && data.displayName.size() > 0 && data.displayName.size() <= 80
+        && ['donation', 'gamepass', 'other'].hasAny([data.kind])
+        && data.verified == true && data.public == true
+        && data.verifiedAt is string && data.verifiedAt.size() <= 40
+        && (!data.keys().hasAny(['robloxUsername']) || (data.robloxUsername is string && data.robloxUsername.size() <= 40))
+        && (!data.keys().hasAny(['profileUrl']) || (data.profileUrl is string && data.profileUrl.matches('https://www\\.roblox\\.com/users/[0-9]+/profile')))
+        && (!data.keys().hasAny(['avatarUrl']) || (data.avatarUrl is string && data.avatarUrl.matches('https://.*') && data.avatarUrl.size() <= 2048))
+        && (!data.keys().hasAny(['amountRobux']) || (data.amountRobux is int && data.amountRobux >= 0 && data.amountRobux <= 100000000));
+    }
+    function validPrivateSupporter() {
+      let data = request.resource.data;
+      return data.keys().hasAll(['transactionRef', 'verificationMethod', 'notes', 'anonymous', 'hideAmount', 'publicId'])
+        && data.keys().hasOnly(['transactionRef', 'verificationMethod', 'notes', 'anonymous', 'hideAmount', 'amountRobux', 'publicId'])
+        && data.transactionRef is string && data.transactionRef.size() >= 4 && data.transactionRef.size() <= 120
+        && data.verificationMethod is string && data.verificationMethod.size() > 0 && data.verificationMethod.size() <= 120
+        && data.notes is string && data.notes.size() <= 1000
+        && data.anonymous is bool && data.hideAmount is bool
+        && data.publicId is string && data.publicId.size() >= 20 && data.publicId.size() <= 40
+        && (!data.keys().hasAny(['amountRobux']) || (data.amountRobux is int && data.amountRobux >= 0 && data.amountRobux <= 100000000));
+    }
     function validStaff() {
       let data = request.resource.data;
       return data.keys().hasAll(['name', 'role', 'published'])
@@ -106,6 +130,19 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly(['managed'])
         && request.resource.data.managed == true;
       allow delete: if false;
+    }
+    // Public supporter documents contain only display-safe, verified fields. Private
+    // transaction references and notes are isolated in an administrator-only collection.
+    match /supportersPublic/{documentId} {
+      allow read: if isAdmin() || (resource.data.public == true && resource.data.verified == true);
+      allow create, update: if isAdmin() && validPublicSupporter();
+      allow delete: if isAdmin();
+    }
+    match /supportersPrivate/{documentId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() && !exists(/databases/$(database)/documents/supportersPrivate/$(documentId)) && validPrivateSupporter();
+      allow update: if isAdmin() && resource.data.transactionRef == request.resource.data.transactionRef && resource.data.publicId == request.resource.data.publicId && validPrivateSupporter();
+      allow delete: if isAdmin();
     }
     match /gallery/{documentId} {
       allow read: if isAdmin() || resource.data.published == true;

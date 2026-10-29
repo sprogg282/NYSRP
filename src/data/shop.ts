@@ -43,32 +43,6 @@ export const shopItems: ShopItem[] = [
   //   featured: false,
   //   available: true,
   // },
-   {
-     id: 'membershiip-gold', // replace with a unique id for each product
-     category: 'memberships', // memberships | donations | advertisements
-     name: 'Replace with product name',
-     description: 'Replace with an approved description.',
-     priceRobux: 100, // PLACEHOLDER EXAMPLE ONLY: change to the Game Pass price
-     image: '/images/shop/your-image.png',
-     perks: ['PLACEHOLDER: replace with confirmed membership benefit'],
-     details: 'PLACEHOLDER: optional advertising duration or other detail',
-     gamePassUrl: 'PASTE_YOUR_ROBLOX_GAME_PASS_URL_HERE',
-     featured: false,
-     available: true,
-   },
-   {
-     id: 'donations-silver', // replace with a unique id for each product
-     category: 'donations', // memberships | donations | advertisements
-     name: 'Replace with product name',
-     description: 'Replace with an approved description.',
-     priceRobux: 100, // PLACEHOLDER EXAMPLE ONLY: change to the Game Pass price
-     image: '/images/shop/your-image.png',
-     perks: ['PLACEHOLDER: replace with confirmed membership benefit'],
-     details: 'PLACEHOLDER: optional advertising duration or other detail',
-     gamePassUrl: 'PASTE_YOUR_ROBLOX_GAME_PASS_URL_HERE',
-     featured: false,
-     available: true,
-   },
 ];
 /** True only for HTTPS Roblox Game Pass pages, never generic or malformed URLs. */
 export function isRobloxGamePassUrl(value:string):boolean{try{const url=new URL(value);return url.protocol==='https:'&&(url.hostname==='roblox.com'||url.hostname.endsWith('.roblox.com'))&&/^\/game-pass\/\d+(\/|$)/.test(url.pathname)}catch{return false}}

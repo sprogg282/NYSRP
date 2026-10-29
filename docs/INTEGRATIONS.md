@@ -10,6 +10,10 @@ Website content collections are `news`, `staff`, and `gallery`. Public pages que
 
 The client requests `https://api.erlc.gg/maps`. A checked response returned a JSON object with eight HTTPS PNG URLs: seasonal blank and postal variants. This endpoint returns images, not live server/player status.
 
-## Shop and reports
+## Reports
 
-The legacy source shop catalog is in `src/data/shop.ts`; the first explicit import from `/admin` creates the Firestore `shop` catalog, which becomes the source for the public shop. Roblox links only open Game Pass pages and do not verify purchases. Report submission posts to `/api/reports`, whose Discord webhook is a private server environment variable named `DISCORD_REPORT_WEBHOOK_URL`.
+Report submission posts to the same-origin /api/reports endpoint. Its Discord webhook is configured as the private server environment variable DISCORD_REPORT_WEBHOOK_URL.
+
+## Legacy records
+
+The public shop and supporter pages and their admin controls have been removed. Existing Firestore shop, shopConfig, supportersPublic, and supportersPrivate collections and their security rules are intentionally retained; no historical records were deleted. The legacy source catalog remains in the repository but is unused by the current application.
